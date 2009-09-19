@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+#
+# vim:ft=sh:fenc=UTF-8:ts=4:sts=4:sw=4:expandtab:foldmethod=marker:foldlevel=0:
+#
+# Version: @VERSION@
+
+# Load the functions.#{{{
+# Determine the location of the functions file and source it.
+if [ -f "@BASHLIBDIR@/functions/common" ]; then
+    source "@BASHLIBDIR@/functions/common" 
+else
+    echo "The required functions file could not be found, Aborting..."
+    return 54
+fi
+#}}}
+# calc()#{{{
+function calc()
+{
+    echo "scale=3;$*" | bc
+}
+#}}}
+# rot13 ()#{{{
+function rot13()
+{
+    echo "$@" | tr a-zA-Z n-za-mN-ZA-M
+}
+#}}}
+# hex2dec()#{{{
+function hex2dec()
+{
+    awk 'BEGIN { printf "%d\n",0x$1}'
+}
+#}}}
+# dec2hex()#{{{
+function dec2hex()
+{
+    awk 'BEGIN { printf "%x\n",$1}'
+}
+#}}}
+# mkmine()#{{{
+function mkmine()
+{
+    sudo chown -R ${USER}:${USER} "${1:-.}"
+}
+#}}}
+# pad()#{{{
+function pad()
+{
+    len=${#1}
+    echo -n $1
+    for i in `seq $len $2`; do
+        echo -n " "
+    done
+}
+#}}}
+# newmail()#{{{
+function newmail()
+{
+    tot=0
+    maxlen=30
+    for mb in $MAIL/.??* $MAIL; do
+        for i in .Drafts .Sent .Spam.Missed .Spam .Trash; do
+            if [ "$(basename $mb)" = "${i}" ]; then
+                continue 2
+            fi
+        done
+
+        if echo "$(basename $mb)" | grep -q ".List\|.Forum"; then
+            continue
+        fi
+
+        if [ -d "${mb}/inbox/new" ]; then
+            cnt="$(ls -1 "${mb}/inbox/new/" | wc -l)"
+        elif [ -d "${mb}/new" ]; then
+            cnt="$(ls -1 $mb/new/|wc -l)"
+        else
+            continue
+        fi
+        if [ -d "${mb}/INBOX/new" ]; then
+            cnt="$(ls -1 "${mb}/INBOX/new/" | wc -l)"
+        elif [ -d "${mb}/new" ]; then
+            cnt="$(ls -1 $mb/new/|wc -l)"
+        else
+            continue
+        fi
+        if [ "${cnt}" -gt "0" ]; then
+            tot="$(expr $tot + $cnt)"
+            if [[ "${1}" = "-p" ]]; then
+                mbname="$(basename "${mb}"): "
+            else
+                mbname="$(pad $(basename "${mb}") ${maxlen})"
+            fi
+            echo "${mbname}${cnt}"
+        fi
+    done
+    echo "$(pad 'Total' $maxlen)$tot"
+}
+#}}}
+# devinfo ()#{{{
+function devinfo ()
+{
+    if [ $# -ne 1 ]; then
+        echo "usage: devinfo <device>"
+        return 1
+    fi
+    path=$(udevinfo -q path -n $1)
+    if [ -n "$path" ]; then
+        udevinfo -a -p "$path"
+    fi
+}
+#}}}
+# lastchange()#{{{
+function lastchange()
+{
+   if [ "$1" == "" ]; then
+       echo "usage: lastchange <filename>"
+       return 1
+   fi
+
+   fname=$(basename $1)
+   if [ -f "$HOME/.vim/backup/${fname}~" ]; then
+      vimdiff "$HOME/.vim/backup/${fname}~" "$1"
+   else
+      echo "no vim backup found"
+   fi
+}
+#}}}
+# batt()#{{{
+function batt()
+{
+    if [ ! -x bc ] && [ ! -x /usr/bin/bc ] && [ ! -x /bin/bc ]; then
+        print_error "bc doesn't seem to be installed, Aborting."
+        return 1
+    fi
+    local capacity=" $( grep "design capacity:" /proc/acpi/battery/BAT1/info | sed -e "s@design capacity:.* \([0-9]*\) .*mAh@\1@g" )"
+    local remaining=" $( grep "remaining capacity:" /proc/acpi/battery/BAT1/state | sed -e "s@remaining capacity:.* \([0-9]*\) .*mAh@\1@g" )"
+    local percentage=" $( echo "$( echo ${remaining} ) * 100 / $( echo ${capacity} ) " | bc ) "
+    echo "Remaining Battery = ${percentage}%"
+}
+#}}}
+# search()#{{{
+# SEARCH: summarized google, ggogle, mggogle, agoogle and fm
+function search()
+{
+    case "$1" in
+        -g) ${BROWSER:-lynx} http://www.google.com/search\?q=$2
+        ;;
+        -u) ${BROWSER:-lynx} http://groups.google.com/groups\?q=$2
+        ;;
+        -m) ${BROWSER:-lynx} http://groups.google.com/groups\?selm=$2
+        ;;
+        -a) ${BROWSER:-lynx} http://groups.google.com/groups\?as_uauthors=$2
+        ;;
+        -c) ${BROWSER:-lynx} http://search.cpan.org/search\?query=$2\&mode=module
+        ;;
+        -f) ${BROWSER:-lynx} http://freshmeat.net/search/\?q=$2\&section=projects
+        ;;
+        -F) ${BROWSER:-lynx} http://www.filewatcher.com/\?q=$2
+        ;;
+        -G) ${BROWSER:-lynx} http://www.rommel.stw.uni-erlangen.de/~fejf/cgi-bin/pfs-web.pl\?filter-search_file=$2
+        ;;
+        -s) ${BROWSER:-lynx} http://sourceforge.net/search/\?type=soft\&q=$2
+        ;;
+        -w) ${BROWSER:-lynx} http://de.wikipedia.org/wiki/$2
+        ;;
+        -W) ${BROWSER:-lynx} http://en.wikipedia.org/wiki/$2
+        ;;
+        -d) lynx -source "http://dict.leo.org?$2" | grep -i "TABLE.*/TABLE" | sed "s/^.*\(<TABLE.*TABLE>\).*$/<HTML><BODY>\1<\/BODY><\/HTML>/" | lynx -stdin -dump -width=$COLUMNS -nolist;
+        ;;
+        *) 
+          echo "Usage: $0 {-g | -u | -m | -a | -f | -c | -F | -s | -w | -W | -d}"
+          echo "    -g:  Searching for keyword in google.com"
+          echo "    -u:  Searching for keyword in groups.google.com"
+          echo "    -m:  Searching for message-id in groups.google.com"
+          echo "    -a:  Searching for Authors in groups.google.com"
+          echo "    -c:  Searching for Modules on cpan.org."
+          echo "    -f:  Searching for projects on Freshmeat."
+          echo "    -F:  Searching for packages on FileWatcher."
+          echo "    -G:  Gentoo file search."
+          echo "    -s:  Searching for software on Sourceforge."
+          echo "    -w:  Searching for keyword at wikipedia (german)."
+          echo "    -W:  Searching for keyword at wikipedia (english)."
+          echo "    -d:  Query dict.leo.org ;)"
+    esac
+}
+#}}}
+# selhist()#{{{
+# Found in the mailinglistarchive from Zsh (IIRC ~1996)
+# MISC: Search in the $HISTFILE and select result to execute
+function selhist()
+{
+    emulate -L zsh
+    local TAB=$'\t';
+    (( $# < 1 )) && {
+        echo "Usage: $0 command"
+        return 1
+    };
+    cmd=(${(f)"$(grep -w $1 $HISTFILE | sort | uniq | pr -tn)"})
+    print -l $cmd | less -F
+    echo -n "enter number of desired command [1 - $(( ${#cmd[@]} - 1 ))]: "
+    local answer
+    read answer
+    print -z "${cmd[$answer]#*$TAB}"
+}
+#}}}
