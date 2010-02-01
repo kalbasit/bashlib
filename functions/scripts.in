@@ -9,7 +9,7 @@
 if [ -f "@BASHLIBDIR@/functions/common" ]; then
     source "@BASHLIBDIR@/functions/common" 
 else
-    echo "The required functions file could not be found, Aborting..."
+    echo "$0: The required functions file could not be found, Aborting..."
     exit 54
 fi
 #}}}
