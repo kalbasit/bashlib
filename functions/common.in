@@ -252,7 +252,7 @@ function need_root()
 }
 #}}}
 # needNet()#{{{
-function needNed()
+function needNet()
 {
     # is it a sticky application ?{{{
     if [ "${1}" = "-k" ]; then
@@ -291,10 +291,12 @@ function needNed()
             fi
         done
     ) &
+    #}}}
 
     unset COMMAND
     unset ARGS
     unset KEEP
+
 }
 #}}}
 # not_root()#{{{
