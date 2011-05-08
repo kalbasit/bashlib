@@ -19,6 +19,17 @@ function calc()
     echo "scale=3;$*" | bc
 }
 #}}}
+# m()#{{{
+m()
+{
+  # extendedglob should be on
+  # using bash shopt -s extglob
+  # using zsh setopt extendedglob
+
+  # Invoke TextMate upon all the files and directories except those listed
+  mate !(@(cache|db|log|tmp)) "$@"
+}
+#}}}
 # rot13 ()#{{{
 function rot13()
 {
