@@ -43,18 +43,41 @@ function die()
 function lock_file()
 {
     [[ -z "${LOCK}" ]] && return 1
-    if [ -f "${LOCK}" ]; then
-        die -k "The lock file '${LOCK}' exists, please delete it if you wish to run the script."
-    else
-        touch "${LOCK}" || die "Couldn't create the lock file."
-    fi
+    export LOCKFILE="${LOCK}"
+    lock_it
 }
 #}}}
 # free_lock()#{{{
 function free_lock()
 {
     [[ -z "${LOCK}" ]] && return 1
-    rm -f -- "${LOCK}"
+    export LOCKFILE="${LOCK}"
+    unlock_it
+}
+#}}}
+# lock_it() {{{
+function lock_it()
+{
+  [[ -z "${LOCKFILE}" ]] && return 1
+
+  # Lock
+  if ( set -o noclobber; echo "$$" > "${LOCKFILE}") 2> /dev/null; then
+    # This will cause the lock file to be deleted in case of other exit
+    trap 'rm -f "${LOCKFILE}"; exit $?' INT TERM EXIT
+  else
+    print_error 0 "Failed to acquire lockfile: ${LOCKFILE}."
+    print_error 1 "Held by `cat ${LOCKFILE}`"
+    return 1
+  fi
+}
+#}}}
+# unlock_it() {{{
+function unlock_it()
+{
+  [[ -z "${LOCKFILE}" ]] && return 1
+
+  rm -f -- "${LOCKFILE}"
+  trap - INT TERM EXIT
 }
 #}}}
 # help()#{{{
