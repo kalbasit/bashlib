@@ -96,7 +96,7 @@ function fsed()
 {
     if [ "$( uname )" = "Linux" ]; then
         sed ${@}
-    elif [ "$( uname )" = "FreeBSD" ]; then
+    elif [ "$( uname )" = "FreeBSD" -o "$( uname )" = "darwin" ]; then
         gsed ${@}
     fi
 }
