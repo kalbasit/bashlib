@@ -19,17 +19,6 @@ function calc()
     echo "scale=3;$*" | bc
 }
 #}}}
-# m()#{{{
-m()
-{
-  # extendedglob should be on
-  # using bash shopt -s extglob
-  # using zsh setopt extendedglob
-
-  # Invoke TextMate upon all the files and directories except those listed
-  mate !(@(cache|db|log|tmp)) "$@"
-}
-#}}}
 # rot13 ()#{{{
 function rot13()
 {
@@ -51,7 +40,7 @@ function dec2hex()
 # mkmine()#{{{
 function mkmine()
 {
-    sudo chown -R ${USER}:${USER} "${1:-.}"
+    sudo chown -R ${USER}: "${1:-.}"
 }
 #}}}
 # pad()#{{{
@@ -64,51 +53,8 @@ function pad()
     done
 }
 #}}}
-# newmail()#{{{
-function newmail()
-{
-    tot=0
-    maxlen=30
-    for mb in $MAIL/.??* $MAIL; do
-        for i in .Drafts .Sent .Spam.Missed .Spam .Trash; do
-            if [ "$(basename $mb)" = "${i}" ]; then
-                continue 2
-            fi
-        done
-
-        if echo "$(basename $mb)" | grep -q ".List\|.Forum"; then
-            continue
-        fi
-
-        if [ -d "${mb}/inbox/new" ]; then
-            cnt="$(ls -1 "${mb}/inbox/new/" | wc -l)"
-        elif [ -d "${mb}/new" ]; then
-            cnt="$(ls -1 $mb/new/|wc -l)"
-        else
-            continue
-        fi
-        if [ -d "${mb}/INBOX/new" ]; then
-            cnt="$(ls -1 "${mb}/INBOX/new/" | wc -l)"
-        elif [ -d "${mb}/new" ]; then
-            cnt="$(ls -1 $mb/new/|wc -l)"
-        else
-            continue
-        fi
-        if [ "${cnt}" -gt "0" ]; then
-            tot="$(expr $tot + $cnt)"
-            if [[ "${1}" = "-p" ]]; then
-                mbname="$(basename "${mb}"): "
-            else
-                mbname="$(pad $(basename "${mb}") ${maxlen})"
-            fi
-            echo "${mbname}${cnt}"
-        fi
-    done
-    echo "$(pad 'Total' $maxlen)$tot"
-}
-#}}}
 # devinfo ()#{{{
-function devinfo ()
+function devinfo()
 {
     if [ $# -ne 1 ]; then
         echo "usage: devinfo <device>"
@@ -118,81 +64,6 @@ function devinfo ()
     if [ -n "$path" ]; then
         udevinfo -a -p "$path"
     fi
-}
-#}}}
-# lastchange()#{{{
-function lastchange()
-{
-   if [ "$1" == "" ]; then
-       echo "usage: lastchange <filename>"
-       return 1
-   fi
-
-   fname=$(basename $1)
-   if [ -f "$HOME/.vim/backup/${fname}~" ]; then
-      vimdiff "$HOME/.vim/backup/${fname}~" "$1"
-   else
-      echo "no vim backup found"
-   fi
-}
-#}}}
-# batt()#{{{
-function batt()
-{
-    if [ ! -x bc ] && [ ! -x /usr/bin/bc ] && [ ! -x /bin/bc ]; then
-        print_error "bc doesn't seem to be installed, Aborting."
-        return 1
-    fi
-    local capacity=" $( grep "design capacity:" /proc/acpi/battery/BAT1/info | sed -e "s@design capacity:.* \([0-9]*\) .*mAh@\1@g" )"
-    local remaining=" $( grep "remaining capacity:" /proc/acpi/battery/BAT1/state | sed -e "s@remaining capacity:.* \([0-9]*\) .*mAh@\1@g" )"
-    local percentage=" $( echo "$( echo ${remaining} ) * 100 / $( echo ${capacity} ) " | bc ) "
-    echo "Remaining Battery = ${percentage}%"
-}
-#}}}
-# search()#{{{
-# SEARCH: summarized google, ggogle, mggogle, agoogle and fm
-function search()
-{
-    case "$1" in
-        -g) ${BROWSER:-lynx} http://www.google.com/search\?q=$2
-        ;;
-        -u) ${BROWSER:-lynx} http://groups.google.com/groups\?q=$2
-        ;;
-        -m) ${BROWSER:-lynx} http://groups.google.com/groups\?selm=$2
-        ;;
-        -a) ${BROWSER:-lynx} http://groups.google.com/groups\?as_uauthors=$2
-        ;;
-        -c) ${BROWSER:-lynx} http://search.cpan.org/search\?query=$2\&mode=module
-        ;;
-        -f) ${BROWSER:-lynx} http://freshmeat.net/search/\?q=$2\&section=projects
-        ;;
-        -F) ${BROWSER:-lynx} http://www.filewatcher.com/\?q=$2
-        ;;
-        -G) ${BROWSER:-lynx} http://www.rommel.stw.uni-erlangen.de/~fejf/cgi-bin/pfs-web.pl\?filter-search_file=$2
-        ;;
-        -s) ${BROWSER:-lynx} http://sourceforge.net/search/\?type=soft\&q=$2
-        ;;
-        -w) ${BROWSER:-lynx} http://de.wikipedia.org/wiki/$2
-        ;;
-        -W) ${BROWSER:-lynx} http://en.wikipedia.org/wiki/$2
-        ;;
-        -d) lynx -source "http://dict.leo.org?$2" | grep -i "TABLE.*/TABLE" | sed "s/^.*\(<TABLE.*TABLE>\).*$/<HTML><BODY>\1<\/BODY><\/HTML>/" | lynx -stdin -dump -width=$COLUMNS -nolist;
-        ;;
-        *) 
-          echo "Usage: $0 {-g | -u | -m | -a | -f | -c | -F | -s | -w | -W | -d}"
-          echo "    -g:  Searching for keyword in google.com"
-          echo "    -u:  Searching for keyword in groups.google.com"
-          echo "    -m:  Searching for message-id in groups.google.com"
-          echo "    -a:  Searching for Authors in groups.google.com"
-          echo "    -c:  Searching for Modules on cpan.org."
-          echo "    -f:  Searching for projects on Freshmeat."
-          echo "    -F:  Searching for packages on FileWatcher."
-          echo "    -G:  Gentoo file search."
-          echo "    -s:  Searching for software on Sourceforge."
-          echo "    -w:  Searching for keyword at wikipedia (german)."
-          echo "    -W:  Searching for keyword at wikipedia (english)."
-          echo "    -d:  Query dict.leo.org ;)"
-    esac
 }
 #}}}
 # selhist()#{{{

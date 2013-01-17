@@ -381,8 +381,8 @@ function extract_filename()
     echo "${@}" | sed -e "s@__S_P_A_C_E__@ @g"
 }
 #}}}
-# x ()#{{{
-function x () {
+# x()#{{{
+function x() {
     local file cmd program
     if [ "${#}" -lt "1" ]; then
         print_error 0 "Usage: x compressed archive."
@@ -443,8 +443,8 @@ function x () {
     done
 }
 #}}}
-# c ()#{{{
-function c () {
+# c()#{{{
+function c() {
     local cmd program archive files answer
     if [ "${#}" -gt "1" ]; then
         archive="${1}"
@@ -941,108 +941,3 @@ function least()
     dump_array
 }
 #}}}
-# changeFirefoxProxy() {{{
-function changeFirefoxProxy()
-{
-    # Getting args {{{
-    # Firefox prefs.js
-    FirefoxPrefsJs="${1}"
-
-    # The proxy type to use:
-    #   0 : No proxy
-    #   1 : Manual Proxy
-    #   2 : Automatic proxy configuration URL
-    #   4 : Auto-detect proxy settings for this network
-    #   5 : System Proxy
-    ProxyType="${2}"
-
-    # The proxy server.
-    ProxyServer="${3}"
-
-    # The proxy Port.
-    ProxyPort="${4}"
-    #}}}
-    # Sanity check {{{
-    if [ ${#} -lt 2 ]; then
-        print_error 0 "Usage: changeFirefoxProxy <Firefox prefs.js> <Proxy Type> [Proxy Server] [Proxy Port]"
-        return 1
-    fi
-    if [ ! -f "${FirefoxPrefsJs}" ]; then
-        print_error 0 "Usage: changeFirefoxProxy <Firefox prefs.js> <Proxy Type> [Proxy Server] [Proxy Port]"
-        return 1
-    fi
-    if [ \( "${ProxyType}" -eq 1 -a \( -z "${ProxyServer}" -o -z "${ProxyPort}" \) \) -o \( "${ProxyType}" -eq 2 -a -z "${ProxyServer}" \) ]; then
-        print_error 0 "Usage: changeFirefoxProxy <Firefox prefs.js> <Proxy Type> [Proxy Server] [Proxy Port]"
-        print_error 2 "If ProxyType is 1 You have to specify ProxyServer and ProxyPort"
-        print_error 2 "If ProxyType is 2 You have to specify ProxyServer"
-        print_error 2 "If ProxyType is 0, 4 or 5 then ProxyServer and ProxyPort will be ignored."
-        return 1
-    fi
-    #}}}
-    # Modify prefs.js accordanly {{{
-    sed \
-        -e "s@\(user_pref.*network.proxy.type\",\).*@\1 ${ProxyType});@g" \
-        -i "${FirefoxPrefsJs}"
-
-    # If we have a proxy server, edit it too 
-    if [ -n "${ProxyServer}" ]; then
-
-        # If the proxy type is 2 we need to edit network.proxy.autoconfig_url
-        if [ ${ProxyType} -eq 2 ]; then
-            sed \
-                -e "s@\(user_pref.*network.proxy.autoconfig_url\",\).*@\1 \"${ProxyServer}\");@g" \
-                -i "${FirefoxPrefsJs}"
-        else
-            sed \
-                -e "s@\(user_pref.*network.proxy.ftp\",\).*@\1 \"${ProxyServer}\");@g" \
-                -e "s@\(user_pref.*network.proxy.gopher\",\).*@\1 \"${ProxyServer}\");@g" \
-                -e "s@\(user_pref.*network.proxy.http\",\).*@\1 \"${ProxyServer}\");@g" \
-                -e "s@\(user_pref.*network.proxy.socks\",\).*@\1 \"${ProxyServer}\");@g" \
-                -e "s@\(user_pref.*network.proxy.ssl\",\).*@\1 \"${ProxyServer}\");@g" \
-                -i "${FirefoxPrefsJs}"
-        fi
-    fi
-
-
-    # If we have a proxy port, edit it too 
-    if [ -n "${ProxyPort}" ]; then
-        sed \
-            -e "s@\(user_pref.*network.proxy.ftp_port\",\).*@\1 ${ProxyPort});@g" \
-            -e "s@\(user_pref.*network.proxy.gopher_port\",\).*@\1 ${ProxyPort});@g" \
-            -e "s@\(user_pref.*network.proxy.http_port\",\).*@\1 ${ProxyPort});@g" \
-            -e "s@\(user_pref.*network.proxy.socks_port\",\).*@\1 ${ProxyPort});@g" \
-            -e "s@\(user_pref.*network.proxy.ssl_port\",\).*@\1 ${ProxyPort});@g" \
-            -i "${FirefoxPrefsJs}"
-    fi
-    # }}}
-}
-#}}}
-# populateProxySettingsBasedOnLocation(){{{
-function populateProxySettingsBasedOnLocation()
-{
-    PREFSJS="${1}"
-
-    # Sanity checks
-    if [ $# -lt 1 ]; then
-        return 1
-    fi
-
-    case "${LOCATION}" in
-        "insa")
-            export http_proxy="http://proxy.insa-rennes.fr:8080"
-            export ftp_proxy="http://proxy.insa-rennes.fr:8080"
-            changeFirefoxProxy "${PREFSJS}" 2 "http://www.insa-rennes.fr/proxy.pac"
-            ;;
-        *|'')
-            unset http_proxy
-            unset ftp_proxy
-            changeFirefoxProxy "${PREFSJS}" 4
-            ;;
-    esac
-}
-# Force check_env#{{{
-check_env
-#}}}
-
-# End Of File
-# vim: set ft=sh ts=4 sts=4 sw=4 expandtab:
